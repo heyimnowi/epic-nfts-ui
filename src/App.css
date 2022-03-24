@@ -10,11 +10,16 @@
   background-color: #1A132F;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
+  align-items: center;
 }
 
 .header-container {
   padding-top: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .header {
@@ -38,6 +43,8 @@
   cursor: pointer;
   font-size: 16px;
   color: #FFF;
+  margin-bottom: 30px;
+  display: block;
 }
 
 .connect-wallet-button {
