@@ -128,3 +128,11 @@ const App = () => {
 };
 
 export default App;
+
+declare global {
+  interface Window {
+    ethereum: any;
+  }
+}
+
+
