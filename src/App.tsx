@@ -1,15 +1,25 @@
 import React, { useEffect, useState } from "react";
 import './App.css';
-import twitterLogo from './assets/twitter-logo.svg';
+import { ethers } from "ethers";
+import myEpicNft from './utils/MyEpicNFT.json';
+import ClipLoader from "react-spinners/ClipLoader";
+import { css } from "@emotion/react";
 
-const TWITTER_HANDLE = '_buildspace';
-const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 const OPENSEA_LINK = '';
 const TOTAL_MINT_COUNT = 50;
 
+// Can be a string as well. Need to ensure each key-value pair ends with ;
+const override = css`
+  position: absolute;
+  left: calc(50% - 75px);
+  top: calc(50% - 75px);
+`;
+
 const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
-  
+  let [loading, setLoading] = useState(false);
+  let [color, setColor] = useState("#F7E2E2");
+
   const checkIfWalletIsConnected = async () => {
     const { ethereum } = window;
 
@@ -31,9 +41,6 @@ const App = () => {
     }
   }
 
-  /*
-  * Implement your connectWallet method here
-  */
   const connectWallet = async () => {
     try {
       const { ethereum } = window;
@@ -43,22 +50,53 @@ const App = () => {
         return;
       }
 
-      /*
-      * Fancy method to request access to account.
-      */
       const accounts = await ethereum.request({ method: "eth_requestAccounts" });
 
-      /*
-      * Boom! This should print out public address once we authorize Metamask.
-      */
+      let chainId = await ethereum.request({ method: 'eth_chainId' });
+
+      const rinkebyChainId = "0x4";
+      if (chainId !== rinkebyChainId) {
+        alert("You are not connected to the Rinkeby Test Network!");
+      }
+
       console.log("Connected", accounts[0]);
-      setCurrentAccount(accounts[0]); 
+      console.log("Connected to chain " + chainId);
+      setCurrentAccount(accounts[0]);
     } catch (error) {
       console.log(error);
     }
   }
 
-  // Render Methods
+  const askContractToMintNft = async () => {
+    const CONTRACT_ADDRESS = "0x235E702E67d89505e2878bA87D67976c0CC7d1EE";
+    setLoading(true);
+
+    try {
+      const { ethereum } = window;
+
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const connectedContract = new ethers.Contract(CONTRACT_ADDRESS, myEpicNft.abi, signer);
+
+        console.log("Going to pop wallet now to pay gas...")
+        let nftTxn = await connectedContract.makeAnEpicNFT();
+
+        console.log("Mining...please wait.")
+        await nftTxn.wait();
+
+        console.log(`Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`);
+
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoading(false);
+    }  
+  }
+
   const renderNotConnectedContainer = () => (
     <button onClick={connectWallet} className="cta-button connect-wallet-button">
       Connect to Wallet
@@ -69,33 +107,22 @@ const App = () => {
     checkIfWalletIsConnected();
   }, [])
 
-  /*
-  * Added a conditional render! We don't want to show Connect to Wallet if we're already connected :).
-  */
   return (
     <div className="App">
+      <ClipLoader color={color} loading={loading} css={override} size={150} />
       <div className="container">
         <div className="header-container">
-          <p className="header gradient-text">My NFT Collection</p>
+          <p className="header">My NFT Collection</p>
           <p className="sub-text">
             Each unique. Each beautiful. Discover your NFT today.
           </p>
           {currentAccount === "" ? (
             renderNotConnectedContainer()
           ) : (
-            <button onClick={null} className="cta-button connect-wallet-button">
+            <button onClick={askContractToMintNft} className="cta-button connect-wallet-button">
               Mint NFT
             </button>
           )}
-        </div>
-        <div className="footer-container">
-          <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
-          <a
-            className="footer-text"
-            href={TWITTER_LINK}
-            target="_blank"
-            rel="noreferrer"
-          >{`built on @${TWITTER_HANDLE}`}</a>
         </div>
       </div>
     </div>
